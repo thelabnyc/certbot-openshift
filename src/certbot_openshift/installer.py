@@ -5,6 +5,7 @@ import requests
 import zope.interface
 import logging
 import copy
+import os.path
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +112,18 @@ class Installer(common.Plugin):
 
 
     def restart(self):
-        pass
+        domains = [r['spec']['host'] for r in self._routes['items']]
+        for domain in domains:
+            cert_path = os.path.join(self.config.live_dir, domain, 'cert.pem')
+            chain_path = os.path.join(self.config.live_dir, domain, 'chain.pem')
+            fullchain_path = os.path.join(self.config.live_dir, domain, 'fullchain.pem')
+            key_path = os.path.join(self.config.live_dir, domain, 'privkey.pem')
+            try:
+                open(cert_path, 'r')
+            except IOError:
+                continue
+            self.deploy_cert(domain, cert_path, key_path, chain_path, fullchain_path)
+        self.save()
 
 
     def _enable_redirect(self, domain, *args, **kwargs):
