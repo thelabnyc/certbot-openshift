@@ -2,7 +2,7 @@
 Certbot Openshift
 =================
 
-|  |license| |kit| |format| |downloads|
+|  |license| |kit| |format|
 
 This is a plugin for `Certbot <https://certbot.eff.org/>`_ that allows installing certificates in `Openshift 3 Routes <https://docs.openshift.com/dedicated/architecture/core_concepts/routes.html>`_.
 
@@ -14,6 +14,4 @@ This is a plugin for `Certbot <https://certbot.eff.org/>`_ that allows installin
 .. |kit| image:: https://badge.fury.io/py/certbot-openshift.svg
     :target: https://pypi.python.org/pypi/certbot-openshift
 .. |format| image:: https://img.shields.io/pypi/format/certbot-openshift.svg
-    :target: https://pypi.python.org/pypi/certbot-openshift
-.. |downloads| image:: https://img.shields.io/pypi/dm/certbot-openshift.svg?maxAge=2592000
     :target: https://pypi.python.org/pypi/certbot-openshift
