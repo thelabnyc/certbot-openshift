@@ -184,8 +184,21 @@ class Installer(common.Plugin):
 
         route_url = self._get_route_detail_url(route_name)
 
-        route_old = requests.get(route_url, headers=headers)
+        # Merge the changes into the old route config
+        resp = requests.get(route_url, headers=headers)
+        try:
+            resp.raise_for_status()
+        except requests.RequestException as e:
+            raise errors.PluginError('Encountered error while trying to fetch route config: {}'.format(e))
+        route_old = resp.json()
         route_new = merge(route_changes, copy.deepcopy(route_old))
+
+        # Filter out some keys
+        route_new['metadata'].pop('creationTimestamp', None)
+        route_new['metadata'].pop('resourceVersion', None)
+        route_new['metadata'].pop('selfLink', None)
+        route_new['metadata'].pop('uid', None)
+        route_new.pop('status', None)
 
         # Delete the old route
         resp = requests.delete(route_url, headers=headers)
