@@ -16,6 +16,21 @@ def _validate_not_blank(value):
     return value
 
 
+def merge(source, destination):
+    """
+    From https://stackoverflow.com/a/20666342
+    """
+    for key, value in source.items():
+        if isinstance(value, dict):
+            # get node or create one
+            node = destination.setdefault(key, {})
+            merge(value, node)
+        else:
+            destination[key] = value
+
+    return destination
+
+
 @zope.interface.implementer(interfaces.IInstaller)
 @zope.interface.provider(interfaces.IPluginFactory)
 class Installer(common.Plugin):
@@ -147,6 +162,10 @@ class Installer(common.Plugin):
         return 'https://{}/oapi/v1/namespaces/{}/routes'.format(self._api_host, self._namespace)
 
 
+    def _get_route_post_url(self):
+        return 'https://{}/oapi/v1/namespaces/{}/routes'.format(self._api_host, self._namespace)
+
+
     def _list_routes(self):
         resp = requests.get(self._get_route_list_url(), headers=self._get_headers())
         try:
@@ -156,19 +175,31 @@ class Installer(common.Plugin):
         return resp.json()
 
 
-    def _save_route(self, route_name, route):
-        data = copy.deepcopy(route)
-        data['kind'] = 'Route'
-        data['apiVersion'] = 'v1'
-
+    def _save_route(self, route_name, route_changes):
+        # We have to delete and recreate the route because of a bug in Openshift that makes
+        # routes completely immutable for anyone except the cluster administrator.
+        # See https://github.com/openshift/origin/issues/15772
         headers = self._get_headers()
-        headers['Content-Type'] = 'application/merge-patch+json'
+        headers['Content-Type'] = 'application/json'
 
-        resp = requests.patch(self._get_route_detail_url(route_name), headers=headers, json=data)
+        route_url = self._get_route_detail_url(route_name)
+
+        route_old = requests.get(route_url, headers=headers)
+        route_new = merge(route_changes, copy.deepcopy(route_old))
+
+        # Delete the old route
+        resp = requests.delete(route_url, headers=headers)
         try:
             resp.raise_for_status()
         except requests.RequestException as e:
-            raise errors.PluginError('Encountered error while trying to save route: {}'.format(e))
+            raise errors.PluginError('Encountered error while trying to remove route: {}'.format(e))
+
+        # Create the new route
+        resp = requests.post(self._get_route_post_url(), headers=headers, json=route_new)
+        try:
+            resp.raise_for_status()
+        except requests.RequestException as e:
+            raise errors.PluginError('Encountered error while trying to create route: {}'.format(e))
         return resp.json()
 
 
