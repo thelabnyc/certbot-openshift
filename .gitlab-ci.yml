@@ -6,20 +6,26 @@ cache:
   paths:
     - $HOME/.cache/pip
 
-before_script:
-  - pip install tox
+include:
+  template: SAST.gitlab-ci.yml
 
 test_python35:
   stage: test
   image: python:3.5
-  script: tox --skip-missing-interpreters
+  script:
+    - pip install tox
+    - tox --skip-missing-interpreters
 
 test_python36:
   stage: test
   image: python:3.6
-  script: tox --skip-missing-interpreters
+  script:
+    - pip install tox
+    - tox --skip-missing-interpreters
 
 test_python37:
   stage: test
   image: python:3.7
-  script: tox --skip-missing-interpreters
+  script:
+    - pip install tox
+    - tox --skip-missing-interpreters
